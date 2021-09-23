@@ -8,9 +8,9 @@ npm install aws-directory-upload
 const awsDirectoryUpload = require("aws-directory-upload");
 
 let uploader = new awsDirectoryUpload({
-  localFolderPath: "/Users/dave/Desktop/folder", // Required
-  s3UploadBucket: "bucket", // Required
-  s3UploadFolder: "folder", // Required
+  localFolderPath: "/Users/dave/Desktop/folder", // Required - The path to the folder you want to upload
+  s3UploadBucket: "bucket", // Required - The name of the S3 bucket you want to upload to
+  s3UploadFolder: "folder", // Required - The folder you would like to create in your bucket for the upload
   //chunkSize: 10, // Optional - the amount of files to upload at one time
   //removeUploadedFiles: true, // Optional - if set to true this will remove the files after they have been uploaded
   //accessKeyId: '', // Optional - Your AWS IAM access id
