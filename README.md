@@ -4,27 +4,26 @@
 npm install aws-directory-upload
 ```
 
-```
-const awsDirectoryUpload = require('aws-directory-upload');
+```js
+const awsDirectoryUpload = require("aws-directory-upload");
 
 let uploader = new awsDirectoryUpload({
-    localFolderPath: '/Users/samueleast/Desktop/ops',
-    s3UploadBucket: 'wptuts-deliver',
-    s3UploadFolder: 'checkingIn',
-    //accessKeyId: '',
-    //secretAccessKey: ''
+  localFolderPath: "/Users/dave/Desktop/folder", // Required
+  s3UploadBucket: "bucket", // Required
+  s3UploadFolder: "folder", // Required
+  //accessKeyId: '',
+  //secretAccessKey: ''
 });
 
-// register event listener
 uploader.on("progress", function (data) {
-    console.log(data);
+  console.log(data);
 });
 
 uploader.on("finished", function (data) {
-    console.log('finished', data);
+  console.log("finished", data);
 });
 
 uploader.on("error", function (err) {
-    console.log(err);
+  console.log(err);
 });
 ```
