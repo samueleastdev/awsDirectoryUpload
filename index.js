@@ -38,6 +38,7 @@ class awsDirectoryUpload extends EventEmitter {
         if (!this.localFolderPath) return console.log('The localFolderPath param is a required parameter');
         if (!this.s3UploadBucket) return console.log('The s3UploadBucket param is a required parameter');
         if (!this.s3UploadFolder) return console.log('The s3UploadFolder param is a required parameter');
+        if (!fs.existsSync(this.localFolderPath)) return console.log('The localFolderPath folder does not exists');
 
         // Start uploader
         this.listAllFiles();
@@ -170,7 +171,7 @@ class awsDirectoryUpload extends EventEmitter {
                                 try {
 
                                     // Remove uploaded files if set
-                                    if (self.removeUploadedFiles) await cleanUploadedFiles(files);
+                                    if (self.removeUploadedFiles) await self.cleanUploadedFiles(files);
 
                                     if (chunkedIndex + 1 === chunkedFiles.length) {
 
