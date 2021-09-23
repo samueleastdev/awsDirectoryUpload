@@ -1,6 +1,10 @@
 # AWS Directory Upload
 
 ```
+npm install aws-directory-upload
+```
+
+```
 const awsDirectoryUpload = require('aws-directory-upload');
 
 let uploader = new awsDirectoryUpload({
