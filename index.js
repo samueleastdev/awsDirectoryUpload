@@ -7,7 +7,7 @@ const { getMIMEType, getExtension } = require('node-mime-types');
 const EventEmitter = require('events');
 
 /**
- * Uploads a directory and subfolders to AWS S3 bucket with progress
+ * Uploads a directory and subfolders to AWS S3 bucket with progress indicator
  */
 class awsDirectoryUpload extends EventEmitter {
 
