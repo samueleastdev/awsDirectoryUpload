@@ -11,8 +11,10 @@ let uploader = new awsDirectoryUpload({
   localFolderPath: "/Users/dave/Desktop/folder", // Required
   s3UploadBucket: "bucket", // Required
   s3UploadFolder: "folder", // Required
-  //accessKeyId: '',
-  //secretAccessKey: ''
+  //chunkSize: 10, // Optional - the amount of files to upload at one time
+  //removeUploadedFiles: true, // Optional - if set to true this will remove the files after they have been uploaded
+  //accessKeyId: '', // Optional - Your AWS IAM access id
+  //secretAccessKey: '' // Optional - Your AWS IAM secret access key
 });
 
 uploader.on("progress", function (data) {
