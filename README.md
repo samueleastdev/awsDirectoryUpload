@@ -30,6 +30,8 @@ uploader.on("error", function (err) {
 });
 ```
 
+Available Params
+
 | Params              | Description                                                                 |
 | ------------------- | --------------------------------------------------------------------------- |
 | localFolderPath     | The path to the folder on your computer you want to upload                  |
@@ -39,6 +41,8 @@ uploader.on("error", function (err) {
 | removeUploadedFiles | If set when a batch of files have been uploaded they will be delete locally |
 | accessKeyId         | Your AWS IAM access id                                                      |
 | secretAccessKey     | Your AWS IAM secret access key                                              |
+
+Available Events
 
 | Events   | Description                                               |
 | -------- | --------------------------------------------------------- |
