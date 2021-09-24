@@ -29,3 +29,9 @@ uploader.on("error", function (err) {
   console.log(err);
 });
 ```
+
+| Event    | Description                                               |
+| -------- | --------------------------------------------------------- |
+| progress | List progress, totalProgress, chunkedIndex, chunkedLength |
+| finished | When all files have been uploaded                         |
+| error    | Lists any errors                                          |
