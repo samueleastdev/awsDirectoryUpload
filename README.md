@@ -44,8 +44,8 @@ Available Params
 
 Available Events
 
-| Events   | Description                                               |
-| -------- | --------------------------------------------------------- |
-| progress | List progress, totalProgress, chunkedIndex, chunkedLength |
-| finished | When all files have been uploaded                         |
-| error    | Lists any errors                                          |
+| Events   | Description                                                |
+| -------- | ---------------------------------------------------------- |
+| progress | Lists progress, totalProgress, chunkedIndex, chunkedLength |
+| finished | When all files have been uploaded                          |
+| error    | Lists any errors                                           |
