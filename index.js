@@ -138,7 +138,7 @@ class awsDirectoryUpload extends EventEmitter {
 
                 let awsUploadParams = {
                     Bucket: self.s3UploadBucket,
-                    Key: self.s3UploadFolder + pathname.replace(self.localFolderPath, ""),
+                    Key: self.convertBackslashes(self.s3UploadFolder + pathname.replace(self.localFolderPath, "")),
                     Body: fs.readFileSync(pathname),
                     Path: pathname
                 };
@@ -355,6 +355,18 @@ class awsDirectoryUpload extends EventEmitter {
         });
     }
 
+    /**
+     * 
+     * This is needed for window as a fix for back slashes
+     * @param {*} path 
+     * @returns 
+     */
+    convertBackslashes(path) {
+        return path
+            .replace(/\\/g, "/")
+            .replace(/[^a-z0-9/.]/gi, "_")
+            .toLowerCase();
+    }
 }
 
 module.exports = awsDirectoryUpload;
