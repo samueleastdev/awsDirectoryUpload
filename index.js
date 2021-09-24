@@ -1,7 +1,8 @@
 const { S3Client, PutObjectCommand, GetBucketLocationCommand } = require("@aws-sdk/client-s3");
 const fs = require("fs");
 const path = require("path");
-const walk = require("walk");
+//const walk = require("walk");
+const walk = require("@root/walk");
 const mime = require('node-mime-types');
 const { getMIMEType, getExtension } = require('node-mime-types');
 const EventEmitter = require('events');
@@ -15,6 +16,9 @@ class awsDirectoryUpload extends EventEmitter {
         chunkSize = 200,
         retryTimeout = 1000,
         retryAttempts = 3,
+        filterExtensions = undefined,
+        filesScanned = 0,
+        filesFound = 0,
         removeUploadedFiles = false,
         localFolderPath = undefined,
         s3UploadBucket = undefined,
@@ -26,6 +30,9 @@ class awsDirectoryUpload extends EventEmitter {
         this.chunkSize = chunkSize;
         this.retryTimeout = retryTimeout;
         this.retryAttempts = retryAttempts;
+        this.filterExtensions = filterExtensions;
+        this.filesScanned = filesScanned;
+        this.filesFound = filesFound;
         this.removeUploadedFiles = removeUploadedFiles;
         this.localFolderPath = localFolderPath;
         this.s3UploadBucket = s3UploadBucket;
@@ -45,55 +52,129 @@ class awsDirectoryUpload extends EventEmitter {
 
     }
 
+    /**
+     * Main init function to gether all the files and then start the uploader
+     */
     listAllFiles() {
 
-        let walker = walk.walk(this.localFolderPath, { followLinks: false });
+        const self = this;
 
-        walker.on("file", (root, stat, next) => {
+        walk.walk(this.localFolderPath, walkFunc).then(function () {
 
-            let filePath = root + "/" + stat.name;
+            self.emit("details", {
+                message: 'Files gathered...',
+            });
 
-            let awsUploadParams = {
-                Bucket: this.s3UploadBucket,
-                Key: this.s3UploadFolder + filePath.replace(this.localFolderPath, ""),
-                Body: fs.readFileSync(filePath),
-                Path: filePath
-            };
+            // Filter the files by extension if set
+            if (self.filterExtensions) {
 
-            if (getMIMEType(stat.name)) {
-                awsUploadParams.ContentType = getMIMEType(stat.name);
+                self.uploaderParams = self.uploaderParams.filter(file => self.filterExtensions.includes(file.input.Path.split('.').pop()));
+
+                self.emit("details", {
+                    message: 'Files filtered...',
+                });
+
             }
 
-            this.uploaderParams.push(new PutObjectCommand(awsUploadParams));
+            self.emit("preparing", {
+                filesScanned: self.filesScanned,
+                filesFound: self.filesFound,
+                filesToUpload: self.uploaderParams.length
+            });
 
-            next();
-        });
+            if (self.uploaderParams.length <= 0) {
 
-        walker.on("end", () => {
+                self.emit("details", {
+                    message: 'No files found...',
+                });
+                self.emit("error", "No files found...");
+                return;
+            }
 
-            const chunks = this.createArrayChunks(this.uploaderParams);
+            const chunks = self.createArrayChunks(self.uploaderParams);
+
+            //console.log(self.uploaderParams.map((file) => file.input));
 
             (async () => {
                 try {
 
-                    await this.uploadChunks(chunks);
+                    self.emit("details", {
+                        message: 'Starting uploader...',
+                    });
 
-                    this.emit("finished", {
+                    //await new Promise(resolve => setTimeout(resolve, 30000));
+
+                    await self.uploadChunks(chunks);
+
+                    self.emit("finished", {
                         message: 'Successfully Uploaded',
                     });
 
                 } catch (err) {
 
-                    this.emit("error", new Error(err));
+                    self.emit("error", new Error(err));
 
                 }
             })();
 
         });
 
+        // walkFunc must be async, or return a Promise
+        function walkFunc(err, pathname, dirent) {
+            if (err) {
+                // throw an error to stop walking
+                // (or return to ignore and keep going)
+                console.warn("fs stat error for %s: %s", pathname, err.message);
+                return Promise.resolve();
+            }
+
+            // return false to skip a directory
+            // (ex: skipping "dot file" directories)
+            if (dirent.isDirectory() && dirent.name.startsWith(".")) {
+                return Promise.resolve(false);
+            }
+
+            if (dirent.isFile()) {
+
+                let awsUploadParams = {
+                    Bucket: self.s3UploadBucket,
+                    Key: self.s3UploadFolder + pathname.replace(self.localFolderPath, ""),
+                    Body: fs.readFileSync(pathname),
+                    Path: pathname
+                };
+
+                if (getMIMEType(dirent.name)) {
+                    awsUploadParams.ContentType = getMIMEType(dirent.name);
+                }
+
+                self.uploaderParams.push(new PutObjectCommand(awsUploadParams));
+
+                self.filesFound++;
+
+                //console.log("name:", pathname);
+
+            }
+
+            self.filesScanned++;
+
+            return Promise.resolve();
+
+        }
+
     }
 
+    /**
+     * 
+     * Uploads a chunked array of files to AWS
+     * 
+     * @param {*} chunkedFiles 
+     * @returns 
+     */
     uploadChunks(chunkedFiles) {
+
+        this.emit("details", {
+            message: 'Uploader starting...',
+        });
 
         const self = this;
 
@@ -151,8 +232,6 @@ class awsDirectoryUpload extends EventEmitter {
                         const onProgress = async (promise) => {
                             const result = await promise;
 
-                            progress++;
-
                             let chunkProgress = Math.round((progress / files.length) * 100);
 
                             self.emit("progress", {
@@ -160,7 +239,10 @@ class awsDirectoryUpload extends EventEmitter {
                                 totalProgress: (chunkedIndex / chunkedLength) * 100,
                                 chunkedIndex: chunkedIndex,
                                 chunkedLength: chunkedLength,
+                                file: files[progress].input.Path
                             });
+
+                            progress++;
 
                             return result;
                         };
@@ -179,8 +261,10 @@ class awsDirectoryUpload extends EventEmitter {
                                             progress: 100,
                                             chunkedProgress: 100,
                                             chunkedIndex: chunkedLength,
-                                            chunkedLength: chunkedLength,
+                                            chunkedLength: chunkedLength
                                         });
+
+                                        self.emit("files", files.map((file) => file.input));
 
                                         resolve('true');
 
@@ -219,6 +303,13 @@ class awsDirectoryUpload extends EventEmitter {
 
     }
 
+    /**
+     * 
+     * Splits large arra into manageable chunks
+     * 
+     * @param {*} params 
+     * @returns 
+     */
     createArrayChunks(params) {
 
         // Break array into chunks of perChunk 100 set above
@@ -236,6 +327,13 @@ class awsDirectoryUpload extends EventEmitter {
 
     }
 
+    /**
+     * 
+     * If set in option this will remove any uploaded files
+     * 
+     * @param {*} files 
+     * @returns 
+     */
     cleanUploadedFiles(files) {
 
         return new Promise((resolve, reject) => {
