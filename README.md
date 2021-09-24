@@ -41,7 +41,7 @@ uploader.on("error", function (err) {
 
 # API
 
-Available Params
+## Available Params
 
 | Params              | Description                                                                 |
 | ------------------- | --------------------------------------------------------------------------- |
@@ -54,7 +54,7 @@ Available Params
 | accessKeyId         | Your AWS IAM access id                                                      |
 | secretAccessKey     | Your AWS IAM secret access key                                              |
 
-Available Events
+## Available Events
 
 | Events   | Description                                                |
 | -------- | ---------------------------------------------------------- |
