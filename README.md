@@ -30,7 +30,17 @@ uploader.on("error", function (err) {
 });
 ```
 
-| Event    | Description                                               |
+| Params              | Description                                                                 |
+| ------------------- | --------------------------------------------------------------------------- |
+| localFolderPath     | The path to the folder on your computer you want to upload                  |
+| s3UploadBucket      | The AWS S3 bucket name you want to upload to                                |
+| s3UploadFolder      | The AWS S3 folder name you want to upload to                                |
+| chunkSize           | The size to split the files into manageable chunks to upload                |
+| removeUploadedFiles | If set when a batch of files have been uploaded they will be delete locally |
+| accessKeyId         | Your AWS IAM access id                                                      |
+| secretAccessKey     | Your AWS IAM secret access key                                              |
+
+| Events   | Description                                               |
 | -------- | --------------------------------------------------------- |
 | progress | List progress, totalProgress, chunkedIndex, chunkedLength |
 | finished | When all files have been uploaded                         |
