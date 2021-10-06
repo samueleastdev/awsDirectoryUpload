@@ -1,7 +1,7 @@
 # AWS Directory Upload
 
 ```
-npm install aws-directory-upload
+npm install @samueleastdev/aws-directory-upload
 ```
 
 ```js
