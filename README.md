@@ -5,7 +5,7 @@ npm install @samueleastdev/aws-directory-upload
 ```
 
 ```js
-const awsDirectoryUpload = require("aws-directory-upload");
+const awsDirectoryUpload = require("@samueleastdev/aws-directory-upload");
 
 let uploader = new awsDirectoryUpload({
   localFolderPath: "/Users/dave/Desktop/folder", // Required - The path to the folder you want to upload

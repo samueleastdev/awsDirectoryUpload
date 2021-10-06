@@ -1,6 +1,6 @@
 {
   "name": "@samueleastdev/aws-directory-upload",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Uploaded a folder and subfolders to AWS S3 bucket with progress events AWS SDK V3",
   "main": "index.js",
   "scripts": {
