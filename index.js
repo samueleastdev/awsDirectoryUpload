@@ -59,7 +59,7 @@ class awsDirectoryUpload extends EventEmitter {
 
         const self = this;
 
-        walk.walk(this.localFolderPath, walkFunc).then(function () {
+        walk.walk(this.localFolderPath, walkFunc).then(function() {
 
             self.emit("details", {
                 message: 'Files gathered...',
@@ -247,7 +247,7 @@ class awsDirectoryUpload extends EventEmitter {
                             return result;
                         };
 
-                        await Promise.all(files.map((chunk) => onProgress(s3.send(chunk)))).then(function (uploadFiles) {
+                        await Promise.all(files.map((chunk) => onProgress(s3.send(chunk)))).then(function(uploadFiles) {
 
                             (async () => {
                                 try {
@@ -340,8 +340,8 @@ class awsDirectoryUpload extends EventEmitter {
 
             var i = files.length;
 
-            files.forEach(function (filepath) {
-                fs.unlink(filepath.input.Path, function (err) {
+            files.forEach(function(filepath) {
+                fs.unlink(filepath.input.Path, function(err) {
                     i--;
 
                     if (err) {
@@ -362,10 +362,7 @@ class awsDirectoryUpload extends EventEmitter {
      * @returns 
      */
     convertBackslashes(path) {
-        return path
-            .replace(/\\/g, "/")
-            .replace(/[^a-z0-9/.]/gi, "_")
-            .toLowerCase();
+        return path.replace(/\\/g, "/");
     }
 }
 
