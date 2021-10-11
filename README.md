@@ -62,3 +62,8 @@ uploader.on("error", function (err) {
 | finished | When all files have been uploaded                          |
 | files    | Returns the batch of uploaded files                        |
 | error    | Lists any errors                                           |
+
+## Things to add
+
+- Set ACL's to public or private
+- Check if file exists first before uploading
