@@ -1,32 +1,32 @@
 {
-  "name": "@samueleastdev/aws-directory-upload",
-  "version": "1.0.8",
-  "description": "Uploaded a folder and subfolders to AWS S3 bucket with progress events AWS SDK V3",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/samueleastdev/awsDirectoryUpload.git"
-  },
-  "keywords": [
-    "aws",
-    "uploader",
-    "v3",
-    "directory",
-    "recursive"
-  ],
-  "author": "Samuel East",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/samueleastdev/awsDirectoryUpload/issues"
-  },
-  "homepage": "https://github.com/samueleastdev/awsDirectoryUpload#readme",
-  "dependencies": {
-    "@aws-sdk/client-s3": "^3.33.0",
-    "@aws-sdk/lib-storage": "^3.33.0",
-    "@root/walk": "^1.1.0",
-    "node-mime-types": "^1.0.0"
-  }
+    "name": "@samueleastdev/aws-directory-upload",
+    "version": "1.0.9",
+    "description": "Uploaded a folder and subfolders to AWS S3 bucket with progress events AWS SDK V3",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/samueleastdev/awsDirectoryUpload.git"
+    },
+    "keywords": [
+        "aws",
+        "uploader",
+        "v3",
+        "directory",
+        "recursive"
+    ],
+    "author": "Samuel East",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/samueleastdev/awsDirectoryUpload/issues"
+    },
+    "homepage": "https://github.com/samueleastdev/awsDirectoryUpload#readme",
+    "dependencies": {
+        "@aws-sdk/client-s3": "^3.33.0",
+        "@aws-sdk/lib-storage": "^3.33.0",
+        "@root/walk": "^1.1.0",
+        "node-mime-types": "^1.0.0"
+    }
 }

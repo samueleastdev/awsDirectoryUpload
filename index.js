@@ -13,12 +13,14 @@ const EventEmitter = require('events');
 class awsDirectoryUpload extends EventEmitter {
 
     constructor({
-        chunkSize = 200,
-        retryTimeout = 1000,
-        retryAttempts = 3,
+        chunkSize = 250,
+        retryTimeout = 10000,
+        retryAttempts = 2,
+        retryCount = 0,
         filterExtensions = undefined,
         filesScanned = 0,
         filesFound = 0,
+        showStats = false,
         removeUploadedFiles = false,
         localFolderPath = undefined,
         s3UploadBucket = undefined,
@@ -30,9 +32,11 @@ class awsDirectoryUpload extends EventEmitter {
         this.chunkSize = chunkSize;
         this.retryTimeout = retryTimeout;
         this.retryAttempts = retryAttempts;
+        this.retryCount = retryCount;
         this.filterExtensions = filterExtensions;
         this.filesScanned = filesScanned;
         this.filesFound = filesFound;
+        this.showStats = showStats;
         this.removeUploadedFiles = removeUploadedFiles;
         this.localFolderPath = localFolderPath;
         this.s3UploadBucket = s3UploadBucket;
@@ -95,27 +99,59 @@ class awsDirectoryUpload extends EventEmitter {
 
             //console.log(self.uploaderParams.map((file) => file.input));
 
-            (async () => {
-                try {
+            async function startUploader() {
+
+                self.emit("details", {
+                    message: 'Starting uploader...',
+                });
+
+                //await new Promise(resolve => setTimeout(resolve, 30000));
+
+                await self.uploadChunks(chunks);
+
+                self.emit("finished", {
+                    message: 'Successfully Uploaded',
+                });
+
+            }
+
+            // Start the uploader process
+            function begin() {
+
+                // Run the async function
+                startUploader().catch(err => {
 
                     self.emit("details", {
-                        message: 'Starting uploader...',
+                        message: `Uploader bailed retrying in ${self.retryTimeout}... ${err}`,
                     });
 
-                    //await new Promise(resolve => setTimeout(resolve, 30000));
+                    setTimeout(() => {
 
-                    await self.uploadChunks(chunks);
+                        self.emit("details", {
+                            message: `Running again retryCount:${self.retryCount}... retryAttempts:${self.retryAttempts}`,
+                        });
 
-                    self.emit("finished", {
-                        message: 'Successfully Uploaded',
-                    });
+                        if (self.retryCount < self.retryAttempts) {
 
-                } catch (err) {
+                            self.retryCount++;
 
-                    self.emit("error", new Error(err));
+                            begin();
 
-                }
-            })();
+                        } else {
+
+                            self.emit("error", new Error(err));
+
+                            return new Error(err);
+
+                        }
+
+                    }, self.retryTimeout)
+
+                });
+
+            }
+
+            begin();
 
         });
 
@@ -182,7 +218,8 @@ class awsDirectoryUpload extends EventEmitter {
 
             // Setup s3 connection with creds if set
             let config = {
-                region: "us-east-1"
+                region: "us-east-1",
+                maxAttempts: 0
             }
             if (self.accessKeyId && self.secretAccessKey) {
                 config.credentials = {
@@ -234,13 +271,19 @@ class awsDirectoryUpload extends EventEmitter {
 
                             let chunkProgress = Math.round((progress / files.length) * 100);
 
-                            self.emit("progress", {
+                            let info = {
                                 progress: chunkProgress,
                                 totalProgress: (chunkedIndex / chunkedLength) * 100,
                                 chunkedIndex: chunkedIndex,
                                 chunkedLength: chunkedLength,
                                 file: files[progress].input.Path
-                            });
+                            };
+
+                            if (self.showStats) {
+                                info.stats = fs.statSync(files[progress].input.Path);
+                            }
+
+                            self.emit("progress", info);
 
                             progress++;
 
