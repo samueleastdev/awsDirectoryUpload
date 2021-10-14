@@ -218,9 +218,9 @@ class awsDirectoryUpload extends EventEmitter {
 
             // Setup s3 connection with creds if set
             let config = {
-                region: "us-east-1",
-                maxAttempts: 0
+                region: "us-east-1"
             }
+            //maxAttempts: 5
             if (self.accessKeyId && self.secretAccessKey) {
                 config.credentials = {
                     accessKeyId: this.accessKeyId,
