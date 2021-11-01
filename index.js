@@ -1,4 +1,4 @@
-const { S3Client, PutObjectCommand, GetBucketLocationCommand } = require("@aws-sdk/client-s3");
+const { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand, GetBucketLocationCommand } = require("@aws-sdk/client-s3");
 const fs = require("fs");
 const path = require("path");
 //const walk = require("walk");
@@ -44,6 +44,7 @@ class awsDirectoryUpload extends EventEmitter {
         this.accessKeyId = accessKeyId;
         this.secretAccessKey = secretAccessKey;
         this.uploaderParams = [];
+        this.headParams = [];
 
         // Make sure required params are set
         if (!this.localFolderPath) return console.log('The localFolderPath param is a required parameter');
@@ -96,8 +97,6 @@ class awsDirectoryUpload extends EventEmitter {
             }
 
             const chunks = self.createArrayChunks(self.uploaderParams);
-
-            //console.log(self.uploaderParams.map((file) => file.input));
 
             async function startUploader() {
 
@@ -266,7 +265,30 @@ class awsDirectoryUpload extends EventEmitter {
                 (async () => {
                     try {
 
-                        const onProgress = async (promise) => {
+                        const checkAndSend = async (command) => {
+
+                            try {
+
+                                await s3.send(new HeadObjectCommand({
+                                    Bucket: command.input.Bucket,
+                                    Key: command.input.Key
+                                }));
+
+                                // Files already exists skip
+                                onProgress(command.input);
+
+                            } catch (err) {
+
+                                // Files does not exists upload
+                                await s3.send(command);
+
+                                onProgress(command.input);
+
+                            }
+
+                        }
+
+                        const onProgress = async (command, promise) => {
                             const result = await promise;
 
                             let chunkProgress = Math.round((progress / files.length) * 100);
@@ -276,11 +298,11 @@ class awsDirectoryUpload extends EventEmitter {
                                 totalProgress: (chunkedIndex / chunkedLength) * 100,
                                 chunkedIndex: chunkedIndex,
                                 chunkedLength: chunkedLength,
-                                file: files[progress].input.Path
+                                file: command.Path
                             };
 
                             if (self.showStats) {
-                                info.stats = fs.statSync(files[progress].input.Path);
+                                info.stats = fs.statSync(command.Path);
                             }
 
                             self.emit("progress", info);
@@ -290,7 +312,7 @@ class awsDirectoryUpload extends EventEmitter {
                             return result;
                         };
 
-                        await Promise.all(files.map((chunk) => onProgress(s3.send(chunk)))).then(function(uploadFiles) {
+                        await Promise.all(files.map((chunk) => checkAndSend(chunk))).then(function(uploadFiles) {
 
                             (async () => {
                                 try {
