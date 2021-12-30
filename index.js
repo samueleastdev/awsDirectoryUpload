@@ -6,6 +6,7 @@ const walk = require("@root/walk");
 const mime = require('node-mime-types');
 const { getMIMEType, getExtension } = require('node-mime-types');
 const EventEmitter = require('events');
+const { resolve } = require('dns');
 
 /**
  * Uploads a directory and subfolders to AWS S3 bucket with progress indicator
@@ -106,7 +107,7 @@ class awsDirectoryUpload extends EventEmitter {
 
                 //await new Promise(resolve => setTimeout(resolve, 30000));
 
-                await self.uploadChunks(chunks);
+                await self.setupClient(chunks);
 
                 self.emit("finished", {
                     message: 'Successfully Uploaded',
@@ -205,7 +206,7 @@ class awsDirectoryUpload extends EventEmitter {
      * @param {*} chunkedFiles 
      * @returns 
      */
-    uploadChunks(chunkedFiles) {
+    setupClient(chunkedFiles) {
 
         this.emit("details", {
             message: 'Uploader starting...',
@@ -250,7 +251,9 @@ class awsDirectoryUpload extends EventEmitter {
 
                     self.chunkedFiles = chunkedFiles;
 
-                    self.uploadChunk(self.chunkedFiles[self.chunkedIndex]);
+                    await self.uploadChunks();
+
+                    resolve();
 
                 } catch (err) {
 
@@ -270,115 +273,123 @@ class awsDirectoryUpload extends EventEmitter {
      * @param {*} params 
      * @returns 
      */
-    uploadChunk(files) {
+    uploadChunks() {
 
         const self = this;
 
-        let progress = 0;
+        return new Promise((resolve, reject) => {
 
-        // Start function
-        (async () => {
-            try {
+            function uploadChunk(files) {
 
-                const checkAndSend = async (command) => {
+                let progress = 0;
 
+                // Start function
+                (async () => {
                     try {
 
-                        await self.s3.send(new HeadObjectCommand({
-                            Bucket: command.input.Bucket,
-                            Key: command.input.Key
-                        }));
+                        const checkAndSend = async (command) => {
 
-                        // Files already exists skip
-                        onProgress(command.input);
+                            try {
 
-                    } catch (err) {
+                                await self.s3.send(new HeadObjectCommand({
+                                    Bucket: command.input.Bucket,
+                                    Key: command.input.Key
+                                }));
 
-                        // Files does not exists upload
-                        await self.s3.send(command);
+                                // Files already exists skip
+                                onProgress(command.input);
 
-                        onProgress(command.input);
+                            } catch (err) {
 
-                    }
+                                // Files does not exists upload
+                                await self.s3.send(command);
 
-                }
-
-                const onProgress = async (command, promise) => {
-                    const result = await promise;
-
-                    let chunkProgress = Math.round((progress / files.length) * 100);
-
-                    let info = {
-                        status: 'uploaded',
-                        progress: chunkProgress,
-                        totalProgress: (self.chunkedIndex / self.chunkedLength) * 100,
-                        chunkedIndex: self.chunkedIndex,
-                        chunkedLength: self.chunkedLength,
-                        file: command.Path
-                    };
-
-                    if (self.showStats) {
-                        info.stats = fs.statSync(command.Path);
-                    }
-
-                    self.emit("progress", info);
-
-                    progress++;
-
-                    return result;
-                };
-
-                await Promise.all(files.map((chunk) => checkAndSend(chunk))).then(function(uploadFiles) {
-
-                    (async () => {
-                        try {
-
-                            // Remove uploaded files if set
-                            if (self.removeUploadedFiles) await self.cleanUploadedFiles(files);
-
-                            if (self.chunkedIndex + 1 === self.chunkedLength) {
-
-                                self.emit("progress", {
-                                    status: 'finished',
-                                    progress: 100,
-                                    chunkedProgress: 100,
-                                    filesUploaded: self.filesFound
-                                });
-
-                                return self.emit("files", files.map((file) => file.input));
-
-                            } else {
-
-                                self.chunkedIndex++;
-                                self.uploadChunk(self.chunkedFiles[self.chunkedIndex]);
+                                onProgress(command.input);
 
                             }
 
-                        } catch (err) {
-
-                            self.emit("error", new Error(err));
-
-                            return new Error(err);
-
                         }
-                    })();
 
-                }).catch((err) => {
+                        const onProgress = async (command, promise) => {
+                            const result = await promise;
 
-                    self.emit("error", new Error(err));
+                            let chunkProgress = Math.round((progress / files.length) * 100);
 
-                    return new Error(err);
+                            let info = {
+                                status: 'uploaded',
+                                progress: chunkProgress,
+                                totalProgress: (self.chunkedIndex / self.chunkedLength) * 100,
+                                chunkedIndex: self.chunkedIndex,
+                                chunkedLength: self.chunkedLength,
+                                file: command.Path
+                            };
 
-                });
+                            if (self.showStats) {
+                                info.stats = fs.statSync(command.Path);
+                            }
 
-            } catch (err) {
+                            self.emit("progress", info);
 
-                self.emit("error", new Error(err));
+                            progress++;
 
-                return new Error(err);
+                            return result;
+                        };
+
+                        await Promise.all(files.map((chunk) => checkAndSend(chunk))).then(function(uploadFiles) {
+
+                            (async () => {
+                                try {
+
+                                    // Remove uploaded files if set
+                                    if (self.removeUploadedFiles) await self.cleanUploadedFiles(files);
+
+                                    if (self.chunkedIndex + 1 === self.chunkedLength) {
+
+                                        self.emit("progress", {
+                                            status: 'finished',
+                                            progress: 100,
+                                            chunkedProgress: 100,
+                                            chunkedIndex: self.chunkedIndex,
+                                            chunkedLength: self.chunkedLength,
+                                            filesUploaded: self.filesFound
+                                        });
+
+                                        self.emit("files", files.map((file) => file.input));
+
+                                        resolve();
+
+                                    } else {
+
+                                        self.chunkedIndex++;
+                                        uploadChunk(self.chunkedFiles[self.chunkedIndex]);
+
+                                    }
+
+                                } catch (err) {
+
+                                    return reject(new Error(err));
+
+                                }
+                            })();
+
+                        }).catch((err) => {
+
+                            return reject(new Error(err));
+
+                        });
+
+                    } catch (err) {
+
+                        return reject(new Error(err));
+
+                    }
+                })();
 
             }
-        })();
+
+            uploadChunk(self.chunkedFiles[self.chunkedIndex])
+
+        });
 
     }
 
